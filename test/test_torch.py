@@ -46,6 +46,11 @@ if TEST_LIBROSA:
 
 SIZE = 100
 
+devices = ['cpu'] if not torch.cuda.is_available() else ['cpu', 'cuda']
+dtypes = [torch.bool, torch.float, torch.double, torch.half, torch.uint8,
+          torch.int8, torch.short, torch.int, torch.long]
+
+
 can_retrieve_source = True
 with warnings.catch_warnings(record=True) as warns:
     with tempfile.NamedTemporaryFile() as checkpoint:
@@ -2902,60 +2907,85 @@ class _TestTorchMixin(object):
         self.assertTrue(x.is_cuda)
         torch.set_default_tensor_type(saved_type)
 
-    # This is a temporary test for a boolean tensors on CPU. Once the CUDA part
-    # will be done, these test cases will be moved down to test_tensor_factories_empty test
-    def test_tensor_factories_bool(self):
-        expectedShape = (1, 2)
-        test = torch.empty(expectedShape, dtype=torch.bool)
-        self.assertEqual(expectedShape, test.shape)
+    def test_unfolf_all_devices_and_dtypes_except_half(self):
+        for device in devices:
+            for dt in dtypes:
+                if dt != torch.half:
+                    x = torch.randint(5, (0, 1, 3, 0), dtype=dt, device=device)
+                    self.assertEqual((0, 1, 1, 0, 3), x.unfold(2, 3, 2).shape)
 
-        test2 = torch.empty_like(test, dtype=torch.bool)
-        self.assertEqual(test.shape, test2.shape)
+    def test_copy_all_dtypes_and_devices(self):
+        from copy import copy
+        for device in devices:
+            for dt in dtypes:
+                x = torch.tensor([1, 2, 3, 4], dtype=dt, device=device)
+                y = copy(x)
 
-        test = torch.full(expectedShape, True, dtype=torch.bool)
-        self.assertEqual(test, torch.tensor([[True, True]], dtype=torch.bool))
+                # copy is a shallow copy, only copies the tensor view,
+                # not the data
+                self.assertEqual(x, y)
 
-        test2 = torch.full_like(test, True, dtype=torch.bool)
-        self.assertEqual(test, test2)
+    def test_resize_all_dtypes_and_devices(self):
+        shape = (2, 2)
+        for device in devices:
+            for dt in dtypes:
+                x = torch.tensor([[1, 2], [3, 4], [5, 6]], dtype=dt, device=device)
+                x.resize_(shape)
+                self.assertEqual(shape, x.shape)
 
-        test = torch.zeros(expectedShape, dtype=torch.bool)
-        self.assertEqual(test, torch.tensor([[False, False]], dtype=torch.bool))
+    def test_fill_all_dtypes_and_devices(self):
+        for device in devices:
+            for dt in dtypes:
+                x = torch.tensor((1, 1), dtype=dt, device=device)
+                x.fill_(1)
 
-        test2 = torch.zeros_like(test, dtype=torch.bool)
-        self.assertEqual(test, test2)
+                self.assertEqual(x, torch.tensor([1, 1], dtype=dt, device=device))
+                self.assertEqual(dt, x.dtype)
 
-        test = torch.ones(expectedShape, dtype=torch.bool)
-        self.assertEqual(test, torch.tensor([[True, True]], dtype=torch.bool))
+    def test_clone_all_dtypes_and_devices(self):
+        for device in devices:
+            for dt in dtypes:
+                x = torch.tensor((1, 1), dtype=dt, device=device)
+                y = x.clone()
+                self.assertEqual(x, y)
 
-        test2 = torch.ones_like(test, dtype=torch.bool)
-        self.assertEqual(test, test2)
+    def test_cat_all_dtypes_and_devices(self):
+        for device in devices:
+            for dt in dtypes:
+                x = torch.tensor([[1, 2], [3, 4]], dtype=dt, device=device)
+                expected1 = torch.tensor([[1, 2], [3, 4], [1, 2], [3, 4]], dtype=dt, device=device)
+                self.assertEqual(torch.cat((x, x), 0), expected1)
 
-        test = torch.randint(10, expectedShape, dtype=torch.bool)
-        self.assertEqual(expectedShape, test.shape)
-        self.assertEqual(torch.bool, test.dtype)
+                expected2 = torch.tensor([[1, 2, 1, 2], [3, 4, 3, 4]], dtype=dt, device=device)
+                self.assertEqual(torch.cat((x, x), 1), expected2)
 
     def test_tensor_factories_empty(self):
         # ensure we can create empty tensors from each factory function
         shapes = [(5, 0, 1), (0,), (0, 0, 1, 0, 2, 0, 0)]
-        devices = ['cpu'] if not torch.cuda.is_available() else ['cpu', 'cuda']
 
         for device in devices:
             for shape in shapes:
-                self.assertEqual(shape, torch.zeros(shape, device=device).shape)
-                self.assertEqual(shape, torch.zeros_like(torch.zeros(shape, device=device)).shape)
-                self.assertEqual(shape, torch.empty(shape, device=device).shape)
-                self.assertEqual(shape, torch.empty_like(torch.zeros(shape, device=device)).shape)
-                self.assertEqual(shape, torch.empty_strided(shape, (0,) * len(shape), device=device).shape)
-                self.assertEqual(shape, torch.full(shape, 3, device=device).shape)
-                self.assertEqual(shape, torch.full_like(torch.zeros(shape, device=device), 3).shape)
-                self.assertEqual(shape, torch.ones(shape, device=device).shape)
-                self.assertEqual(shape, torch.ones_like(torch.zeros(shape, device=device)).shape)
-                self.assertEqual(shape, torch.rand(shape, device=device).shape)
-                self.assertEqual(shape, torch.rand_like(torch.zeros(shape, device=device)).shape)
-                self.assertEqual(shape, torch.randn(shape, device=device).shape)
-                self.assertEqual(shape, torch.randn_like(torch.zeros(shape, device=device)).shape)
-                self.assertEqual(shape, torch.randint(6, shape, device=device).shape)
-                self.assertEqual(shape, torch.randint_like(torch.zeros(shape, device=device), 6).shape)
+                for dt in dtypes:
+                    self.assertEqual(shape, torch.zeros(shape, device=device, dtype=dt).shape)
+                    self.assertEqual(shape, torch.zeros_like(torch.zeros(shape, device=device, dtype=dt)).shape)
+                    self.assertEqual(shape, torch.full(shape, 3, device=device, dtype=dt).shape)
+                    self.assertEqual(shape, torch.full_like(torch.zeros(shape, device=device, dtype=dt), 3).shape)
+                    self.assertEqual(shape, torch.ones(shape, device=device, dtype=dt).shape)
+                    self.assertEqual(shape, torch.ones_like(torch.zeros(shape, device=device, dtype=dt)).shape)
+                    self.assertEqual(shape, torch.empty(shape, device=device, dtype=dt).shape)
+                    self.assertEqual(shape, torch.empty_like(torch.zeros(shape, device=device, dtype=dt)).shape)
+                    self.assertEqual(shape, torch.empty_strided(shape, (0,) * len(shape), device=device, dtype=dt).shape)
+
+                    if dt != torch.half:
+                        self.assertEqual(shape, torch.randint(6, shape, device=device, dtype=dt).shape)
+                        self.assertEqual(shape, torch.randint_like(torch.zeros(shape, device=device, dtype=dt), 6).shape)
+
+                    if dt != torch.double and dt != torch.float and dt != torch.half and dt != torch.bool:
+                        self.assertRaises(RuntimeError, lambda: torch.rand(shape, device=device, dtype=dt).shape)
+
+                    if dt == torch.double or dt == torch.float:
+                        self.assertEqual(shape, torch.randn(shape, device=device, dtype=dt).shape)
+                        self.assertEqual(shape, torch.randn_like(torch.zeros(shape, device=device, dtype=dt)).shape)
 
             self.assertEqual((0,), torch.arange(0, device=device).shape)
             self.assertEqual((0, 0), torch.eye(0, device=device).shape)
@@ -2971,6 +3001,7 @@ class _TestTorchMixin(object):
             self.assertEqual((0,), torch.hann_window(0, device=device).shape)
             self.assertEqual((1, 1, 0), torch.tensor([[[]]], device=device).shape)
             self.assertEqual((1, 1, 0), torch.as_tensor([[[]]], device=device).shape)
+
 
     def test_new_tensor(self):
         expected = torch.autograd.Variable(torch.ByteTensor([1, 1]))
@@ -7652,10 +7683,6 @@ class _TestTorchMixin(object):
 
             # select
             self.assertEqual((0, 1, 0), torch.select(x, 2, 2).shape)
-            # unfold
-            self.assertEqual((0, 1, 1, 0, 3), x.unfold(2, 3, 2).shape)
-            y = torch.randn((0, 1, 3), device=device)
-            self.assertEqual((1, 1, 3, 0), y.unfold(0, 0, 4).shape)
 
             # repeat, permute
             self.assertEqual((9, 0, 5, 6, 0), x.repeat(9, 7, 5, 2, 3).shape)
@@ -8069,6 +8096,10 @@ class _TestTorchMixin(object):
                          "Tensors with no storages should not appear to be set "
                          "to each other")
 
+        t1 = torch.tensor([True, True], dtype=torch.bool)
+        t2 = torch.tensor([0], dtype=torch.bool).set_(t1)
+        self.assertTrue(t1.is_set_to(t2))
+
     def test_tensor_set(self):
         t1 = torch.Tensor()
         t2 = torch.Tensor(3, 4, 9, 10).uniform_()
@@ -8099,6 +8130,11 @@ class _TestTorchMixin(object):
         t1.set_(source=t2.storage(), storage_offset=0, size=size, stride=stride)
         self.assertEqual(t1.size(), size)
         self.assertEqual(t1.stride(), stride)
+
+        t1 = torch.tensor([True, True], dtype=torch.bool)
+        t2 = torch.tensor([False, False], dtype=torch.bool)
+        t1.set_(t2)
+        self.assertEqual(t1.storage()._cdata, t2.storage()._cdata)
 
     def test_equal(self):
         # Contiguous, 1D
@@ -8535,16 +8571,6 @@ class _TestTorchMixin(object):
         s2 = deepcopy(s)
         self.assertEqual(torch.nn.Parameter, type(s2['weight']))
         self.assertEqual(torch.nn.Parameter, type(s2['bias']))
-
-    def test_copy(self):
-        from copy import copy
-        a = torch.randn(5, 5)
-        a_clone = a.clone()
-        b = copy(a)
-        b.fill_(1)
-        # copy is a shallow copy, only copies the tensor view,
-        # not the data
-        self.assertEqual(a, b)
 
     def test_pickle(self):
         if sys.version_info[0] == 2:
