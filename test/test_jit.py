@@ -13919,7 +13919,7 @@ class TestClassType(JitTestCase):
         self.assertEqual(fn(input), input)
 
     def test_get_attr(self):
-        @torch.jit.script
+        @torch.jit.script  # noqa: B903
         class FooTest:
             def __init__(self, x):
                 self.foo = x
@@ -13982,7 +13982,7 @@ class TestClassType(JitTestCase):
 
     def test_type_annotations(self):
         with self.assertRaisesRegex(RuntimeError, "expected a value of type bool"):
-            @torch.jit.script
+            @torch.jit.script  # noqa: B903
             class FooTest:
                 def __init__(self, x):
                     # type: (bool) -> None
@@ -14003,7 +14003,7 @@ class TestClassType(JitTestCase):
                         self.attr = x
 
     def test_class_type_as_param(self):
-        @torch.jit.script
+        @torch.jit.script  # noqa: B903
         class FooTest:
             def __init__(self, x):
                 self.attr = x
@@ -14071,7 +14071,7 @@ class TestClassType(JitTestCase):
         self.assertEqual(input, output)
 
     def test_save_load_with_classes_nested(self):
-        @torch.jit.script
+        @torch.jit.script  # noqa: B903
         class FooNestedTest:
             def __init__(self, y):
                 self.y = y
