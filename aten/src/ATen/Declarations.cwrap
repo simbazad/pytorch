@@ -2511,10 +2511,12 @@
   name: _th_uniform_
   types:
     - floating_point
+    - Bool
   backends:
     - CPU
     - CUDA
   cname: uniform
+  cpu_bool: True
   variants: function
   return: self
   arguments:
