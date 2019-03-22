@@ -194,8 +194,6 @@ CALL_TEMPLATE = CodeTemplate("${cname}(${actuals})")
 class NYIError(Exception):
     """Indicates we don't support this declaration yet"""
 
-    __slots__ = ['reason']
-
     def __init__(self, reason):
         self.reason = reason
 
@@ -493,7 +491,7 @@ FunctionOption = TypedDict('FunctionOption', {
     'with_gil': bool,
     'cpu_half': bool,
     'deprecated': bool,
-    'cpu_bool': bool,
+    'enable_for_bool': bool,
     # See Note [field_name versus name]
     'field_name': str,
     'formals_list': List[AtFormal],

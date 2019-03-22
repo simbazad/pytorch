@@ -691,34 +691,15 @@ const std::vector<std::string> functions = {
 
             return output, backward
 
-        def AD_fused_dropout_backward(grad,
-                                      mask,
-                                      p1m: float):
-            p1r = 1. / p1m
-            if grad.requires_grad:
-                grad_input = grad * (mask.type_as(grad) * p1r)
-            else:
-                grad_input = torch._masked_scale(grad, mask, p1r)
-            return grad_input
-
         def dropout(input,
                     p: float,
                     train: bool):
-            use_cuda = input.is_cuda
-            # CUDA has a fused dropout implementation
-            p1m = 1. - p
-            if use_cuda:
-                res, mask = torch._fused_dropout(input, p1m)
-            else:
-                mask = torch.empty_like(input)
-                mask.bernoulli_(p1m)
-                res = mask * input / p1m
+            mask = torch.empty_like(input)
+            mask.bernoulli_(1 - p)
+            res = mask * input / (1.0 - p)
 
             def backward(grad_output):
-                if use_cuda:
-                    grad_input = AD_fused_dropout_backward(grad_output, mask, p1m)
-                else:
-                    grad_input = grad_output * mask / p1m
+                grad_input = grad_output * mask / (1.0 - p)
                 return grad_input, None, None
             return res, backward
 

@@ -1,13 +1,15 @@
 #include "cuda_nccl_gpu.h"
 
 namespace caffe2 {
+
 namespace nccl {
+
 namespace {
 
 std::vector<int> getDevices(const NCCLExecution& ex) {
   std::vector<int> result;
   result.reserve(ex.elements.size());
-  for (const auto& el : ex.elements) {
+  for (const auto& el: ex.elements) {
     result.push_back(el.device);
   }
   return result;
@@ -47,9 +49,20 @@ class NCCLContext {
     CUDAGuard g(master_gpu_id_);
     CUDA_ENFORCE(cudaEventDestroy(master_event_));
 
+    /*
+     * TODO(T30279827) Temporarily disable calling ncclCommDestroy
+     * Calling ncclCommDestroy while program exiting is undefined
+     * according to Nvidia, and will lead to segfault in NCCL 2
+     * (whether it is called before or after the CUDA runtime destructor).
+     * Temporarily disable it in destructor to avoid segfault.
+     * Following up with Nvidia for long term solution.
+     */
+
+    /*
     for (auto& comm : comms_) {
       ncclCommDestroy(comm);
     }
+    */
   }
 
   std::vector<int> devices_;
@@ -62,13 +75,15 @@ class NCCLContext {
   C10_DISABLE_COPY_AND_ASSIGN(NCCLContext);
 };
 
-// We share the contexts across multiple operators, hence the cache.
+// We share the contexts across multiple operators, hence the
+// thread-local cache
 static std::mutex& gContextsMutex() {
   static std::mutex m;
   return m;
 }
 
 std::unordered_map<std::string, std::unique_ptr<NCCLContext>>& gContexts() {
+  // Initiazed after CUDA, so guaranteed to be destructed before CUDA.
   static std::unordered_map<std::string, std::unique_ptr<NCCLContext>> m;
   return m;
 }
@@ -183,12 +198,6 @@ void runNCCL(const NCCLExecution& ex, InitF&& init_f, F&& f) {
   }
 }
 
-} // namespace
-
-void destroyContexts() {
-  std::lock_guard<std::mutex> g(gContextsMutex());
-  auto& contexts = gContexts();
-  contexts.clear();
 }
 
 template <typename T>
@@ -320,6 +329,5 @@ template class NCCL<int>;
 #ifdef CAFFE_HAS_CUDA_FP16
 template class NCCL<at::Half>;
 #endif
-
-} // namespace nccl
-} // namespace caffe2
+}
+}

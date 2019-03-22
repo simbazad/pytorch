@@ -12,11 +12,10 @@ from ..._jit_internal import weak_module, weak_script_method, List
 @weak_module
 class _ConvNd(Module):
 
-    __constants__ = ['stride', 'padding', 'dilation', 'groups', 'bias', 'padding_mode']
+    __constants__ = ['stride', 'padding', 'dilation', 'groups', 'bias']
 
     def __init__(self, in_channels, out_channels, kernel_size, stride,
-                 padding, dilation, transposed, output_padding,
-                 groups, bias, padding_mode):
+                 padding, dilation, transposed, output_padding, groups, bias):
         super(_ConvNd, self).__init__()
         if in_channels % groups != 0:
             raise ValueError('in_channels must be divisible by groups')
@@ -31,7 +30,6 @@ class _ConvNd(Module):
         self.transposed = transposed
         self.output_padding = output_padding
         self.groups = groups
-        self.padding_mode = padding_mode
         if transposed:
             self.weight = Parameter(torch.Tensor(
                 in_channels, out_channels // groups, *kernel_size))
@@ -136,7 +134,6 @@ class Conv1d(_ConvNd):
         stride (int or tuple, optional): Stride of the convolution. Default: 1
         padding (int or tuple, optional): Zero-padding added to both sides of
             the input. Default: 0
-        padding_mode (string, optional). Accepted values `zeros` and `circular` Default: `zeros`
         dilation (int or tuple, optional): Spacing between kernel
             elements. Default: 1
         groups (int, optional): Number of blocked connections from input
@@ -176,23 +173,17 @@ class Conv1d(_ConvNd):
     """
 
     def __init__(self, in_channels, out_channels, kernel_size, stride=1,
-                 padding=0, dilation=1, groups=1,
-                 bias=True, padding_mode='zeros'):
+                 padding=0, dilation=1, groups=1, bias=True):
         kernel_size = _single(kernel_size)
         stride = _single(stride)
         padding = _single(padding)
         dilation = _single(dilation)
         super(Conv1d, self).__init__(
             in_channels, out_channels, kernel_size, stride, padding, dilation,
-            False, _single(0), groups, bias, padding_mode)
+            False, _single(0), groups, bias)
 
     @weak_script_method
     def forward(self, input):
-        if self.padding_mode == 'circular':
-            expanded_padding = ((self.padding[0] + 1) // 2, self.padding[0] // 2)
-            return F.conv1d(F.pad(input, expanded_padding, mode='circular'),
-                            self.weight, self.bias, self.stride,
-                            _single(0), self.dilation, self.groups)
         return F.conv1d(input, self.weight, self.bias, self.stride,
                         self.padding, self.dilation, self.groups)
 
@@ -270,7 +261,6 @@ class Conv2d(_ConvNd):
         kernel_size (int or tuple): Size of the convolving kernel
         stride (int or tuple, optional): Stride of the convolution. Default: 1
         padding (int or tuple, optional): Zero-padding added to both sides of the input. Default: 0
-        padding_mode (string, optional). Accepted values `zeros` and `circular` Default: `zeros`
         dilation (int or tuple, optional): Spacing between kernel elements. Default: 1
         groups (int, optional): Number of blocked connections from input channels to output channels. Default: 1
         bias (bool, optional): If ``True``, adds a learnable bias to the output. Default: ``True``
@@ -317,24 +307,17 @@ class Conv2d(_ConvNd):
         https://github.com/vdumoulin/conv_arithmetic/blob/master/README.md
     """
     def __init__(self, in_channels, out_channels, kernel_size, stride=1,
-                 padding=0, dilation=1, groups=1,
-                 bias=True, padding_mode='zeros'):
+                 padding=0, dilation=1, groups=1, bias=True):
         kernel_size = _pair(kernel_size)
         stride = _pair(stride)
         padding = _pair(padding)
         dilation = _pair(dilation)
         super(Conv2d, self).__init__(
             in_channels, out_channels, kernel_size, stride, padding, dilation,
-            False, _pair(0), groups, bias, padding_mode)
+            False, _pair(0), groups, bias)
 
     @weak_script_method
     def forward(self, input):
-        if self.padding_mode == 'circular':
-            expanded_padding = ((self.padding[1] + 1) // 2, self.padding[1] // 2,
-                                (self.padding[0] + 1) // 2, self.padding[0] // 2)
-            return F.conv2d(F.pad(input, expanded_padding, mode='circular'),
-                            self.weight, self.bias, self.stride,
-                            _pair(0), self.dilation, self.groups)
         return F.conv2d(input, self.weight, self.bias, self.stride,
                         self.padding, self.dilation, self.groups)
 
@@ -405,7 +388,6 @@ class Conv3d(_ConvNd):
         kernel_size (int or tuple): Size of the convolving kernel
         stride (int or tuple, optional): Stride of the convolution. Default: 1
         padding (int or tuple, optional): Zero-padding added to all three sides of the input. Default: 0
-        padding_mode (string, optional). Accepted values `zeros` and `circular` Default: `zeros`
         dilation (int or tuple, optional): Spacing between kernel elements. Default: 1
         groups (int, optional): Number of blocked connections from input channels to output channels. Default: 1
         bias (bool, optional): If ``True``, adds a learnable bias to the output. Default: ``True``
@@ -454,25 +436,17 @@ class Conv3d(_ConvNd):
         https://github.com/vdumoulin/conv_arithmetic/blob/master/README.md
     """
     def __init__(self, in_channels, out_channels, kernel_size, stride=1,
-                 padding=0, dilation=1, groups=1,
-                 bias=True, padding_mode='zeros'):
+                 padding=0, dilation=1, groups=1, bias=True):
         kernel_size = _triple(kernel_size)
         stride = _triple(stride)
         padding = _triple(padding)
         dilation = _triple(dilation)
         super(Conv3d, self).__init__(
             in_channels, out_channels, kernel_size, stride, padding, dilation,
-            False, _triple(0), groups, bias, padding_mode)
+            False, _triple(0), groups, bias)
 
     @weak_script_method
     def forward(self, input):
-        if self.padding_mode == 'circular':
-            expanded_padding = ((self.padding[2] + 1) // 2, self.padding[2] // 2,
-                                (self.padding[1] + 1) // 2, self.padding[1] // 2,
-                                (self.padding[0] + 1) // 2, self.padding[0] // 2)
-            return F.conv3d(F.pad(input, expanded_padding, mode='circular'),
-                            self.weight, self.bias, self.stride, _triple(0),
-                            self.dilation, self.groups)
         return F.conv3d(input, self.weight, self.bias, self.stride,
                         self.padding, self.dilation, self.groups)
 
@@ -480,8 +454,7 @@ class Conv3d(_ConvNd):
 @weak_module
 class _ConvTransposeMixin(object):
     __constants__ = ['stride', 'padding', 'kernel_size', 'dim_size',
-                     'output_padding', 'groups', 'dilation', 'transposed',
-                     'bias', 'padding_mode']
+                     'output_padding', 'groups', 'dilation', 'transposed', 'bias']
 
     @weak_script_method
     def forward(self, input, output_size=None):
@@ -624,8 +597,7 @@ class ConvTranspose1d(_ConvTransposeMixin, _ConvNd):
     """
 
     def __init__(self, in_channels, out_channels, kernel_size, stride=1,
-                 padding=0, output_padding=0, groups=1, bias=True,
-                 dilation=1, padding_mode='zeros'):
+                 padding=0, output_padding=0, groups=1, bias=True, dilation=1):
         kernel_size = _single(kernel_size)
         stride = _single(stride)
         padding = _single(padding)
@@ -633,14 +605,11 @@ class ConvTranspose1d(_ConvTransposeMixin, _ConvNd):
         output_padding = _single(output_padding)
         super(ConvTranspose1d, self).__init__(
             in_channels, out_channels, kernel_size, stride, padding, dilation,
-            True, output_padding, groups, bias, padding_mode)
+            True, output_padding, groups, bias)
 
     @weak_script_method
     def forward(self, input, output_size=None):
         # type: (Tensor, Optional[List[int]]) -> Tensor
-        if self.padding_mode != 'zeros':
-            raise ValueError('Only `zeros` padding mode is supported for ConvTranspose1d')
-
         output_padding = self._output_padding(input, output_size, self.stride, self.padding, self.kernel_size)
         return F.conv_transpose1d(
             input, self.weight, self.bias, self.stride, self.padding,
@@ -772,8 +741,7 @@ class ConvTranspose2d(_ConvTransposeMixin, _ConvNd):
     """
 
     def __init__(self, in_channels, out_channels, kernel_size, stride=1,
-                 padding=0, output_padding=0, groups=1, bias=True,
-                 dilation=1, padding_mode='zeros'):
+                 padding=0, output_padding=0, groups=1, bias=True, dilation=1):
         kernel_size = _pair(kernel_size)
         stride = _pair(stride)
         padding = _pair(padding)
@@ -781,16 +749,12 @@ class ConvTranspose2d(_ConvTransposeMixin, _ConvNd):
         output_padding = _pair(output_padding)
         super(ConvTranspose2d, self).__init__(
             in_channels, out_channels, kernel_size, stride, padding, dilation,
-            True, output_padding, groups, bias, padding_mode)
+            True, output_padding, groups, bias)
 
     @weak_script_method
     def forward(self, input, output_size=None):
         # type: (Tensor, Optional[List[int]]) -> Tensor
-        if self.padding_mode != 'zeros':
-            raise ValueError('Only `zeros` padding mode is supported for ConvTranspose2d')
-
         output_padding = self._output_padding(input, output_size, self.stride, self.padding, self.kernel_size)
-
         return F.conv_transpose2d(
             input, self.weight, self.bias, self.stride, self.padding,
             output_padding, self.groups, self.dilation)
@@ -917,8 +881,7 @@ class ConvTranspose3d(_ConvTransposeMixin, _ConvNd):
     """
 
     def __init__(self, in_channels, out_channels, kernel_size, stride=1,
-                 padding=0, output_padding=0, groups=1, bias=True,
-                 dilation=1, padding_mode='zeros'):
+                 padding=0, output_padding=0, groups=1, bias=True, dilation=1):
         kernel_size = _triple(kernel_size)
         stride = _triple(stride)
         padding = _triple(padding)
@@ -926,16 +889,12 @@ class ConvTranspose3d(_ConvTransposeMixin, _ConvNd):
         output_padding = _triple(output_padding)
         super(ConvTranspose3d, self).__init__(
             in_channels, out_channels, kernel_size, stride, padding, dilation,
-            True, output_padding, groups, bias, padding_mode)
+            True, output_padding, groups, bias)
 
     @weak_script_method
     def forward(self, input, output_size=None):
         # type: (Tensor, Optional[List[int]]) -> Tensor
-        if self.padding_mode != 'zeros':
-            raise ValueError('Only `zeros` padding mode is supported for ConvTranspose3d')
-
         output_padding = self._output_padding(input, output_size, self.stride, self.padding, self.kernel_size)
-
         return F.conv_transpose3d(
             input, self.weight, self.bias, self.stride, self.padding,
             output_padding, self.groups, self.dilation)

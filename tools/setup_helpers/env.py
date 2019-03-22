@@ -1,6 +1,5 @@
 import os
 import platform
-import struct
 import sys
 from itertools import chain
 
@@ -13,8 +12,6 @@ IS_ARM = (platform.machine() == 'aarch64')
 
 IS_CONDA = 'conda' in sys.version or 'Continuum' in sys.version or any([x.startswith('CONDA') for x in os.environ])
 CONDA_DIR = os.path.join(os.path.dirname(sys.executable), '..')
-
-IS_64BIT = (struct.calcsize("P") == 8)
 
 
 def check_env_flag(name, default=''):

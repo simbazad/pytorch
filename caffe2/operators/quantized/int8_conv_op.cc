@@ -19,6 +19,9 @@ why they are separate files.
 std::function<void(OpSchema&)> ConvDocGenerator(
     const char* dim,
     bool relu_fused = false) {
+  auto suffix = relu_fused ? " Output will go through rectified linear "
+                             "function, where y = max(0, x)."
+                           : "";
   return [=](OpSchema& schema) {
     string doc = R"DOC(
 The convolution operator consumes an input vector, a {dim}filter blob
@@ -26,6 +29,11 @@ and a bias blob and computes the output. {conv_doc})DOC";
     c10::ReplaceAll(doc, "{dim}", dim);
     c10::ReplaceAll(doc, "{conv_doc}", kConvDoc_int8);
     schema.SetDoc(doc);
+    string output_doc =
+        "Output data blob that contains the result of the "
+        "convolution. The output dimensions are functions of the kernel size, "
+        "stride size, and pad lengths.{suffix}";
+    c10::ReplaceAll(output_doc, "{suffix}", suffix);
     schema.Input(
         0,
         "X",
@@ -45,14 +53,7 @@ and a bias blob and computes the output. {conv_doc})DOC";
         "bias",
         "The 1D bias blob that is added through the "
         "convolution; has size (M).");
-    schema.Output(0, "Y", relu_fused ?
-        "Output data blob that contains the result of the "
-        "convolution. The output dimensions are functions of the kernel size, "
-        "stride size, and pad lengths. Output will go through rectified linear "
-        "function, where y = max(0, x)." :
-        "Output data blob that contains the result of the "
-        "convolution. The output dimensions are functions of the kernel size, "
-        "stride size, and pad lengths.");
+    schema.Output(0, "Y", output_doc.c_str());
   };
 }
 

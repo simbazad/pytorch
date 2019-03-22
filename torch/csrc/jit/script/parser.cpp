@@ -616,9 +616,6 @@ Lexer& Parser::lexer() {
 Decl Parser::parseTypeComment() {
   return pImpl->parseTypeComment();
 }
-Expr Parser::parseExp() {
-  return pImpl->parseExp();
-}
 
 } // namespace script
 } // namespace jit

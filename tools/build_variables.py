@@ -53,7 +53,6 @@ libtorch_sources = [
     "torch/csrc/jit/constants.cpp",
     "torch/csrc/jit/node_hashing.cpp",
     "torch/csrc/jit/export.cpp",
-    "torch/csrc/jit/pickler.cpp",
     "torch/csrc/jit/graph_executor.cpp",
     "torch/csrc/jit/import.cpp",
     "torch/csrc/jit/interpreter.cpp",

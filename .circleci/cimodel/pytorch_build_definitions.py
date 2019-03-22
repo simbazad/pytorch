@@ -107,7 +107,7 @@ class Conf(object):
 
         if self.is_xla or phase == "test":
             val = OrderedDict()
-            if self.is_xla or "slow" in self.parms:
+            if self.is_xla:
                 # this makes the job run on merges rather than new PRs
                 # TODO Many of the binary build jobs on PRs could be moved to this mode as well
                 val["filters"] = {"branches": {"only": ["master"]}}
@@ -150,7 +150,6 @@ def gen_dependent_configs(xenial_parent_config):
         (["multigpu"], "large"),
         (["NO_AVX2"], "medium"),
         (["NO_AVX", "NO_AVX2"], "medium"),
-        (["slow"], "medium"),
     ]
 
     configs = []

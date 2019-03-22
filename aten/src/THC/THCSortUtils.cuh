@@ -60,9 +60,7 @@ __device__ inline void bitonicSort(K keys[Power2SortSize],
                                    V values[Power2SortSize],
                                    bool valid[Power2SortSize],
                                    const Comparator& comp) {
-#ifndef __HIP_PLATFORM_HCC__
 #pragma unroll
-#endif
   for (unsigned int size = 2; size < Power2SortSize; size *= 2) {
     bool flag = ((threadIdx.x & (size / 2)) != 0);
 
@@ -79,9 +77,7 @@ __device__ inline void bitonicSort(K keys[Power2SortSize],
     }
   }
 
-#ifndef __HIP_PLATFORM_HCC__
 #pragma unroll
-#endif
   for (unsigned int stride = Power2SortSize / 2; stride > 0; stride /= 2) {
 
     __syncthreads();
@@ -102,15 +98,11 @@ template <typename Comparator, typename K,
 __device__ inline void bitonicSortKeys(K keys[Power2SortSize],
                                    bool valid[Power2SortSize],
                                    const Comparator& comp) {
-#ifndef __HIP_PLATFORM_HCC__
 #pragma unroll
-#endif
   for (unsigned int size = 2; size < Power2SortSize; size *= 2) {
     bool flag = ((threadIdx.x & (size / 2)) != 0);
 
-#ifndef __HIP_PLATFORM_HCC__
 #pragma unroll
-#endif
     for (unsigned int stride = size / 2; stride > 0; stride /= 2) {
 
       __syncthreads();
@@ -123,9 +115,7 @@ __device__ inline void bitonicSortKeys(K keys[Power2SortSize],
     }
   }
 
-#ifndef __HIP_PLATFORM_HCC__
 #pragma unroll
-#endif
   for (unsigned int stride = Power2SortSize / 2; stride > 0; stride /= 2) {
     __syncthreads();
 

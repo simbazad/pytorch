@@ -1,8 +1,6 @@
 #ifndef CAFFE2_UTILS_MATH_UTILS_H_
 #define CAFFE2_UTILS_MATH_UTILS_H_
 
-#include <vector>
-
 #include "caffe2/core/common.h"
 
 #if defined(__CUDA_ARCH__) || defined(__HIP_DEVICE_COMPILE__) || \
@@ -60,9 +58,7 @@ MATH_UTILS_DECL bool IsAGeZeroAndALtB(const int a, const int b) {
 }
 
 // Increase the index digits by one based on dims.
-template <typename TIndex>
-CAFFE2_API void
-IncreaseIndexInDims(int ndim, const TIndex* dims, TIndex* index);
+CAFFE2_API void IncreaseIndexInDims(const int n, const int* dims, int* index);
 
 // Get index value from dims and index digits.
 CAFFE2_API int GetIndexFromDims(const int n, const int* dims, const int* index);
@@ -141,12 +137,11 @@ CAFFE2_API void ComputeTransposeAxesForReduceOp(
 CAFFE2_API void
 ComputeTransposeAxesForReduceOp(const int ndim, const int* dims, int* axes);
 
-template <typename TIndex>
 CAFFE2_API void ComputeTransposedStrides(
-    int ndim,
-    const TIndex* dims,
+    const int ndim,
+    const int* dims,
     const int* axes,
-    TIndex* strides);
+    int* strides);
 
 } // namespace utils
 

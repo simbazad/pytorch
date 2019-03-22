@@ -24,7 +24,7 @@ struct InputBuffer {
   // Accumulates the variable at a specified index.
   void add(size_t pos, Variable var);
 
-  at::Device device() const;
+  int device() const;
 
   Variable operator[](size_t pos) { return buffer[pos]; }
 

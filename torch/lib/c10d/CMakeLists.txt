@@ -49,6 +49,7 @@ set(C10D_SRCS
   PrefixStore.cpp
   TCPStore.cpp
   Utils.cpp
+  ProcessGroupGloo.cpp
   )
 
 if(C10D_USE_CUDA)
@@ -70,10 +71,6 @@ endif()
 if(USE_C10D_MPI)
   list(APPEND C10D_SRCS ProcessGroupMPI.cpp)
   list(APPEND C10D_LIBS ${MPI_LIBRARIES})
-endif()
-
-if (USE_GLOO)
-  list(APPEND C10D_SRCS ProcessGroupGloo.cpp)
 endif()
 
 add_library(c10d STATIC ${C10D_SRCS})
@@ -124,9 +121,7 @@ copy_header(Store.hpp)
 copy_header(TCPStore.hpp)
 copy_header(Types.hpp)
 copy_header(Utils.hpp)
-if(USE_GLOO)
-  copy_header(ProcessGroupGloo.hpp)
-endif()
+copy_header(ProcessGroupGloo.hpp)
 
 if(USE_C10D_NCCL)
   copy_header(ProcessGroupNCCL.hpp)

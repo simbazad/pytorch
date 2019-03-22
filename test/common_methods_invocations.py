@@ -2,7 +2,6 @@ import torch
 from torch._six import inf, nan, istuple
 from functools import reduce, wraps
 from operator import mul, itemgetter
-import collections
 from torch.autograd import Variable, Function, detect_anomaly
 from torch.testing import make_non_contiguous
 from common_utils import (skipIfNoLapack,
@@ -73,7 +72,9 @@ def prod_zeros(dim_size, dim_select):
     return result
 
 
-non_differentiable = collections.namedtuple('non_differentiable', ['tensor'])
+class non_differentiable(object):
+    def __init__(self, tensor):
+        self.tensor = tensor
 
 
 class dont_convert(tuple):
@@ -648,15 +649,15 @@ def method_tests():
          'tall_all', NO_ARGS, [skipIfNoLapack], lambda usv: (usv[0][:, :(S - 2)], usv[1], usv[2])),
         ('svd', lambda: random_fullrank_matrix_distinct_singular_value(M), NO_ARGS,
          'large', NO_ARGS, [skipIfNoLapack]),
-        ('solve', (S, S), (random_fullrank_matrix_distinct_singular_value(
+        ('gesv', (S, S), (random_fullrank_matrix_distinct_singular_value(
             S, silent=True),), '', NO_ARGS, [skipIfNoLapack]),
-        ('solve', (S, S, S), (random_fullrank_matrix_distinct_singular_value(S, S, silent=True),),
+        ('gesv', (S, S, S), (random_fullrank_matrix_distinct_singular_value(S, S, silent=True),),
          'batched', NO_ARGS, [skipIfNoLapack]),
-        ('solve', (2, 3, S, S), (random_fullrank_matrix_distinct_singular_value(S, 2, 3, silent=True),),
+        ('gesv', (2, 3, S, S), (random_fullrank_matrix_distinct_singular_value(S, 2, 3, silent=True),),
          'batched_dims', NO_ARGS, [skipIfNoLapack]),
-        ('solve', (2, 2, S, S), (random_fullrank_matrix_distinct_singular_value(S, 1, silent=True),),
+        ('gesv', (2, 2, S, S), (random_fullrank_matrix_distinct_singular_value(S, 1, silent=True),),
          'batched_broadcast_A', NO_ARGS, [skipIfNoLapack]),
-        ('solve', (1, S, S), (random_fullrank_matrix_distinct_singular_value(S, 2, 2, silent=True),),
+        ('gesv', (1, S, S), (random_fullrank_matrix_distinct_singular_value(S, 2, 2, silent=True),),
          'batched_broadcast_b', NO_ARGS, [skipIfNoLapack]),
         ('fill_', (S, S, S), (1,), 'number'),
         ('fill_', (), (1,), 'number_scalar'),
@@ -1031,7 +1032,6 @@ EXCLUDE_GRADGRADCHECK_BY_TEST_NAME = {
     'test_slogdet_1x1_neg_det',
     'test_slogdet_neg_det',
     'test_slogdet_symmetric',
-    'test_cdist',
 }
 
 

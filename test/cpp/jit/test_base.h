@@ -32,9 +32,7 @@
 
 #endif // defined(USE_GTEST)
 
-static inline bool isSandcastle() {
-  return (
-      (std::getenv("SANDCASTLE")) ||
-      (std::getenv("TW_JOB_USER") &&
-       std::string(std::getenv("TW_JOB_USER")) == "sandcastle"));
+bool isSandcastle() {
+  return ((std::getenv("SANDCASTLE")) || \
+    (std::getenv("TW_JOB_USER") && std::string(std::getenv("TW_JOB_USER")) == "sandcastle"));
 }

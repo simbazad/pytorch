@@ -11,22 +11,16 @@ namespace caffe2 {
 namespace math {
 namespace utils {
 
-#define CAFFE2_SPECIALIZED_INCREASE_INDEX_IN_DIMS(TIndex)  \
-  template <>                                              \
-  C10_EXPORT void IncreaseIndexInDims<TIndex>(             \
-      const int ndim, const TIndex* dims, TIndex* index) { \
-    for (int i = ndim - 1; i >= 0; --i) {                  \
-      ++index[i];                                          \
-      if (index[i] >= dims[i]) {                           \
-        index[i] -= dims[i];                               \
-      } else {                                             \
-        break;                                             \
-      }                                                    \
-    }                                                      \
+void IncreaseIndexInDims(const int n, const int* dims, int* index) {
+  for (int i = n - 1; i >= 0; --i) {
+    ++index[i];
+    if (index[i] >= dims[i]) {
+      index[i] -= dims[i];
+    } else {
+      break;
+    }
   }
-CAFFE2_SPECIALIZED_INCREASE_INDEX_IN_DIMS(std::int32_t)
-CAFFE2_SPECIALIZED_INCREASE_INDEX_IN_DIMS(std::int64_t)
-#undef CAFFE2_SPECIALIZED_INCREASE_INDEX_IN_DIMS
+}
 
 int GetIndexFromDims(const int n, const int* dims, const int* index) {
   int sum = 0;
@@ -332,23 +326,21 @@ void ComputeTransposeAxesForReduceOp(
   }
 }
 
-#define CAFFE2_SPECIALIZED_COMPUTE_TRANSPOSED_STRIDES(TIndex)                 \
-  template <>                                                                 \
-  C10_EXPORT void ComputeTransposedStrides<TIndex>(                           \
-      const int ndim, const TIndex* dims, const int* axes, TIndex* strides) { \
-    std::vector<TIndex> buff(ndim);                                           \
-    TIndex cur_stride = 1;                                                    \
-    for (int i = ndim - 1; i >= 0; --i) {                                     \
-      buff[i] = cur_stride;                                                   \
-      cur_stride *= dims[i];                                                  \
-    }                                                                         \
-    for (int i = 0; i < ndim; ++i) {                                          \
-      strides[i] = buff[axes[i]];                                             \
-    }                                                                         \
+void ComputeTransposedStrides(
+    const int ndim,
+    const int* dims,
+    const int* axes,
+    int* strides) {
+  std::vector<int> buff(ndim);
+  int cur_stride = 1;
+  for (int i = ndim - 1; i >= 0; --i) {
+    buff[i] = cur_stride;
+    cur_stride *= dims[i];
   }
-CAFFE2_SPECIALIZED_COMPUTE_TRANSPOSED_STRIDES(std::int32_t)
-CAFFE2_SPECIALIZED_COMPUTE_TRANSPOSED_STRIDES(std::int64_t)
-#undef CAFFE2_SPECIALIZED_COMPUTE_TRANSPOSED_STRIDES
+  for (int i = 0; i < ndim; ++i) {
+    strides[i] = buff[axes[i]];
+  }
+}
 
 } // namespace utils
 } // namespace math

@@ -1,4 +1,4 @@
-from .setup_helpers.env import (IS_64BIT, IS_ARM, IS_DARWIN, IS_LINUX, IS_PPC, IS_WINDOWS,
+from .setup_helpers.env import (IS_ARM, IS_DARWIN, IS_LINUX, IS_PPC, IS_WINDOWS,
                                 DEBUG, REL_WITH_DEB_INFO, USE_MKLDNN,
                                 check_env_flag, check_negative_env_flag, hotpatch_build_env_vars)
 
@@ -84,8 +84,7 @@ elif REL_WITH_DEB_INFO:
 
 def overlay_windows_vcvars(env):
     from distutils._msvccompiler import _get_vc_env
-    vc_arch = 'x64' if IS_64BIT else 'x86'
-    vc_env = _get_vc_env(vc_arch)
+    vc_env = _get_vc_env('x64')
     for k, v in env.items():
         lk = k.lower()
         if lk not in vc_env:
@@ -124,15 +123,13 @@ def run_cmake(version,
               build_dir,
               my_env):
     cmake_args = [
-        get_cmake_command()
+        get_cmake_command(),
+        base_dir
     ]
     if USE_NINJA:
         cmake_args.append('-GNinja')
     elif IS_WINDOWS:
-        if IS_64BIT:
-            cmake_args.append('-GVisual Studio 15 2017 Win64')
-        else:
-            cmake_args.append('-GVisual Studio 15 2017')
+        cmake_args.append('-GVisual Studio 15 2017 Win64')
     try:
         import numpy as np
         NUMPY_INCLUDE_DIR = np.get_include()
@@ -218,18 +215,7 @@ def run_cmake(version,
         if env_var_name.startswith('gh'):
             # github env vars use utf-8, on windows, non-ascii code may
             # cause problem, so encode first
-            try:
-                my_env[env_var_name] = str(my_env[env_var_name].encode("utf-8"))
-            except UnicodeDecodeError as e:
-                shex = ':'.join('{:02x}'.format(ord(c)) for c in my_env[env_var_name])
-                sys.stderr.write('Invalid ENV[{}] = {}\n'.format(env_var_name, shex))
-    # According to the CMake manual, we should pass the arguments first,
-    # and put the directory as the last element. Otherwise, these flags
-    # may not be passed correctly.
-    # Reference:
-    # 1. https://cmake.org/cmake/help/latest/manual/cmake.1.html#synopsis
-    # 2. https://stackoverflow.com/a/27169347
-    cmake_args.append(base_dir)
+            my_env[env_var_name] = str(my_env[env_var_name].encode("utf-8"))
     check_call(cmake_args, cwd=build_dir, env=my_env)
 
 

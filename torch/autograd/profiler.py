@@ -3,7 +3,7 @@ import re
 import os
 import sys
 import itertools
-from collections import defaultdict, namedtuple
+from collections import defaultdict
 
 import torch
 from torch._six import FileNotFoundError
@@ -366,7 +366,11 @@ class Interval(object):
         return self.end - self.start
 
 
-Kernel = namedtuple('Kernel', ['name', 'device', 'interval'])
+class Kernel(object):
+    def __init__(self, name, device, interval):
+        self.name = name
+        self.device = device
+        self.interval = interval
 
 
 # TODO: record TID too
