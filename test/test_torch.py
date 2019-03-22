@@ -2893,85 +2893,36 @@ class _TestTorchMixin(object):
         self.assertTrue(x.is_cuda)
         torch.set_default_tensor_type(saved_type)
 
-    def test_tensor_randoms_bool(self):
-        expectedShape = (1, 2)
-
-        test = torch.rand(expectedShape, dtype=torch.bool)
-        self.assertEqual(expectedShape, test.shape)
-        self.assertEqual(torch.bool, test.dtype)
-
-        test2 = torch.rand_like(test, dtype=torch.bool)
-        self.assertEqual(test.shape, test2.shape)
-        self.assertEqual(torch.bool, test2.dtype)
-
-        test = torch.rand(expectedShape, dtype=torch.bool)
-        self.assertEqual(expectedShape, test.shape)
-        self.assertEqual(torch.bool, test.dtype)
-
-        # capped & clamped random
-        test = torch.tensor([[0, 0]], dtype=torch.bool)
-        test.random_(0, 2)
-        self.assertEqual(expectedShape, test.shape)
-        self.assertEqual(torch.bool, test.dtype)
-
-        test.random_(2)
-        self.assertEqual(expectedShape, test.shape)
-        self.assertEqual(torch.bool, test.dtype)
-
-    # This is a temporary test for a boolean tensors on CPU. Once the CUDA part
-    # will be done, these test cases will be moved down to test_tensor_factories_empty test
-    def test_tensor_factories_bool(self):
-        expectedShape = (1, 2)
-        test = torch.empty(expectedShape, dtype=torch.bool)
-        self.assertEqual(expectedShape, test.shape)
-
-        test2 = torch.empty_like(test, dtype=torch.bool)
-        self.assertEqual(test.shape, test2.shape)
-
-        test = torch.full(expectedShape, True, dtype=torch.bool)
-        self.assertEqual(test, torch.tensor([[True, True]], dtype=torch.bool))
-
-        test2 = torch.full_like(test, True, dtype=torch.bool)
-        self.assertEqual(test, test2)
-
-        test = torch.zeros(expectedShape, dtype=torch.bool)
-        self.assertEqual(test, torch.tensor([[False, False]], dtype=torch.bool))
-
-        test2 = torch.zeros_like(test, dtype=torch.bool)
-        self.assertEqual(test, test2)
-
-        test = torch.ones(expectedShape, dtype=torch.bool)
-        self.assertEqual(test, torch.tensor([[True, True]], dtype=torch.bool))
-
-        test2 = torch.ones_like(test, dtype=torch.bool)
-        self.assertEqual(test, test2)
-
-        test = torch.randint(10, expectedShape, dtype=torch.bool)
-        self.assertEqual(expectedShape, test.shape)
-        self.assertEqual(torch.bool, test.dtype)
-
     def test_tensor_factories_empty(self):
         # ensure we can create empty tensors from each factory function
         shapes = [(5, 0, 1), (0,), (0, 0, 1, 0, 2, 0, 0)]
         devices = ['cpu'] if not torch.cuda.is_available() else ['cpu', 'cuda']
+        dtypes = [torch.bool, torch.float, torch.double, torch.half, torch.uint8,
+                  torch.int8, torch.short, torch.int, torch.long]
 
         for device in devices:
             for shape in shapes:
-                self.assertEqual(shape, torch.zeros(shape, device=device).shape)
-                self.assertEqual(shape, torch.zeros_like(torch.zeros(shape, device=device)).shape)
-                self.assertEqual(shape, torch.empty(shape, device=device).shape)
-                self.assertEqual(shape, torch.empty_like(torch.zeros(shape, device=device)).shape)
-                self.assertEqual(shape, torch.empty_strided(shape, (0,) * len(shape), device=device).shape)
-                self.assertEqual(shape, torch.full(shape, 3, device=device).shape)
-                self.assertEqual(shape, torch.full_like(torch.zeros(shape, device=device), 3).shape)
-                self.assertEqual(shape, torch.ones(shape, device=device).shape)
-                self.assertEqual(shape, torch.ones_like(torch.zeros(shape, device=device)).shape)
-                self.assertEqual(shape, torch.rand(shape, device=device).shape)
-                self.assertEqual(shape, torch.rand_like(torch.zeros(shape, device=device)).shape)
-                self.assertEqual(shape, torch.randn(shape, device=device).shape)
-                self.assertEqual(shape, torch.randn_like(torch.zeros(shape, device=device)).shape)
-                self.assertEqual(shape, torch.randint(6, shape, device=device).shape)
-                self.assertEqual(shape, torch.randint_like(torch.zeros(shape, device=device), 6).shape)
+                for dt in dtypes:
+                    self.assertEqual(shape, torch.zeros(shape, device=device, dtype=dt).shape)
+                    self.assertEqual(shape, torch.zeros_like(torch.zeros(shape, device=device, dtype=dt)).shape)
+                    self.assertEqual(shape, torch.full(shape, 3, device=device, dtype=dt).shape)
+                    self.assertEqual(shape, torch.full_like(torch.zeros(shape, device=device, dtype=dt), 3).shape)
+                    self.assertEqual(shape, torch.ones(shape, device=device, dtype=dt).shape)
+                    self.assertEqual(shape, torch.ones_like(torch.zeros(shape, device=device, dtype=dt)).shape)
+                    self.assertEqual(shape, torch.empty(shape, device=device, dtype=dt).shape)
+                    self.assertEqual(shape, torch.empty_like(torch.zeros(shape, device=device, dtype=dt)).shape)
+                    self.assertEqual(shape, torch.empty_strided(shape, (0,) * len(shape), device=device, dtype=dt).shape)
+
+                    if dt != torch.half:
+                        self.assertEqual(shape, torch.randint(6, shape, device=device, dtype=dt).shape)
+                        self.assertEqual(shape, torch.randint_like(torch.zeros(shape, device=device, dtype=dt), 6).shape)
+
+                    if dt != torch.double and dt != torch.float and dt != torch.half and dt != torch.bool:
+                        self.assertRaises(RuntimeError, lambda: torch.rand(shape, device=device, dtype=dt).shape)
+
+                    if dt == torch.double or dt == torch.float:
+                        self.assertEqual(shape, torch.randn(shape, device=device, dtype=dt).shape)
+                        self.assertEqual(shape, torch.randn_like(torch.zeros(shape, device=device, dtype=dt)).shape)
 
             self.assertEqual((0,), torch.arange(0, device=device).shape)
             self.assertEqual((0, 0), torch.eye(0, device=device).shape)
